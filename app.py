@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash
 import mysql.connector
 from config import DB_CONFIG
 
 
 app = Flask(__name__)
+app = Flask(__name__)
+app.secret_key = "biblioteca_escolar"
 
 
 def conectar():
@@ -459,6 +461,7 @@ def atualizar_aluno(id_aluno):
 
         cursor.execute(sql, valores)
         conexao.commit()
+        flash("Aluno cadastrado com sucesso!", "sucesso")
 
 
         cursor.close()
@@ -557,6 +560,7 @@ def atualizar_livro(id_livro):
 
         cursor.execute(sql, valores)
         conexao.commit()
+        flash("Aluno cadastrado com sucesso!", "sucesso")
 
 
         cursor.close()
@@ -564,6 +568,8 @@ def atualizar_livro(id_livro):
 
 
         return redirect("/livros")
+      
+
 
 
     except Exception as erro:
