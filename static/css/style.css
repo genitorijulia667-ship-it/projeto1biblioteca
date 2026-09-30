@@ -126,3 +126,18 @@ a {
     color: #856404;
     border: 1px solid #ffeeba;
 }
+
+
+
+.erro {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+
+.aviso {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}

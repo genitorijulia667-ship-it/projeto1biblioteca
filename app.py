@@ -1,9 +1,8 @@
 from flask import Flask, render_template, request, redirect, flash
 import mysql.connector
 from config import DB_CONFIG
+from datetime import datetime
 
-
-app = Flask(__name__)
 app = Flask(__name__)
 app.secret_key = "biblioteca_escolar"
 
@@ -47,43 +46,39 @@ def formulario_aluno():
 @app.route("/alunos/cadastrar", methods=["POST"])
 def cadastrar_aluno():
     try:
-        nome = request.form["nome"]
-        serie = request.form["serie"]
-        turma = request.form["turma"]
-        telefone = request.form["telefone"]
-
-
         conexao = conectar()
         cursor = conexao.cursor()
 
 
         sql = """
-            INSERT INTO aluno (nome, serie, turma, telefone)
+            INSERT INTO aluno (titulo, serie, turma, telefone)
             VALUES (%s, %s, %s, %s)
         """
 
 
-        valores = (nome, serie, turma, telefone)
 
-
-        cursor.execute(sql, valores)
+        cursor.execute
         conexao.commit()
+        
 
 
         cursor.close()
         conexao.close()
 
-
+        flash("Aluno cadastrado com sucesso!")
         return redirect("/alunos")
 
 
     except Exception as erro:
-        return f"Erro ao cadastrar aluno: {erro}"
+        flash(f"Erro ao cadastrar aluno: {erro}", "erro")
+        return redirect("/alunos")
 
 # Rotas para livros
 @app.route("/livros")
 def listar_livros():
     try:
+
+
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
 
@@ -147,6 +142,7 @@ def cadastrar_livro():
 @app.route("/bibliotecarios")
 def listar_bibliotecarios():
     try:
+      
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
 
@@ -242,7 +238,7 @@ def listar_emprestimos():
         cursor.close()
         conexao.close()
 
-
+        flash("Empréstimo registrado com sucesso!", "sucesso")
         return render_template("emprestimos.html", emprestimos=emprestimos)
 
 
@@ -336,17 +332,18 @@ def cadastrar_emprestimo():
 
 
         conexao.commit()
-
+        flash("Empréstimo registrado com sucesso!", "sucesso")
 
         cursor.close()
         conexao.close()
 
-
+        
         return redirect("/emprestimos")
 
 
     except Exception as erro:
-        return f"Erro ao cadastrar empréstimo: {erro}"
+        flash("Erro ao registrar empréstimo.", "erro")
+
 
 # Rota para devolução de livro
 @app.route("/emprestimos/devolver/<int:id_emprestimo>")
@@ -396,7 +393,7 @@ def devolver_livro(id_emprestimo):
         cursor.close()
         conexao.close()
 
-
+        flash("Livro devolvido com sucesso!", "sucesso")
         return redirect("/emprestimos")
 
 
@@ -472,7 +469,9 @@ def atualizar_aluno(id_aluno):
 
 
     except Exception as erro:
-        return f"Erro ao atualizar aluno: {erro}"
+        flash(f"Erro ao atualizar aluno: {erro}", "erro")
+        return redirect("/alunos")
+
 
 
 
@@ -492,16 +491,17 @@ def excluir_aluno(id_aluno):
 
         conexao.commit()
 
-
         cursor.close()
         conexao.close()
 
-
+        flash("Aluno excluído com sucesso!", "sucesso")
         return redirect("/alunos")
 
 
     except Exception as erro:
-        return f"Erro ao excluir aluno: {erro}"
+        flash("Não foi possível excluir o aluno. Verifique se ele possui empréstimos cadastrados.", "erro")
+        return redirect("/alunos")
+
 
 @app.route("/livros/editar/<int:id_livro>")
 def editar_livro(id_livro):
@@ -597,7 +597,7 @@ def excluir_livro(id_livro):
         cursor.close()
         conexao.close()
 
-
+        flash("Livro excluído com sucesso!", "sucesso")
         return redirect("/livros")
 
 
@@ -694,7 +694,7 @@ def excluir_bibliotecario(id_bibliotecario):
         cursor.close()
         conexao.close()
 
-
+        flash("Bibliotecário excluído com sucesso!", "sucesso")
         return redirect("/bibliotecarios")
 
 
