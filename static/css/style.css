@@ -141,3 +141,13 @@ a {
     color: #856404;
     border: 1px solid #ffeeba;
 }
+
+form a {
+    margin-left: 10px;
+}
+
+
+input::placeholder {
+    color: #777;
+}
+

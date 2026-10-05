@@ -11,24 +11,99 @@ def conectar():
     return mysql.connector.connect(**DB_CONFIG)
 
 
+
 @app.route("/")
 def index():
-    return render_template("index.html")
-
-
-@app.route("/alunos")
-def listar_alunos():
     try:
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
 
 
-        cursor.execute("SELECT * FROM aluno")
+        cursor.execute("SELECT COUNT(*) AS total FROM aluno")
+        total_alunos = cursor.fetchone()["total"]
+
+
+        cursor.execute("SELECT COUNT(*) AS total FROM livro")
+        total_livros = cursor.fetchone()["total"]
+
+
+        cursor.execute("SELECT COUNT(*) AS total FROM livro WHERE status = 'Disponível'")
+        total_disponiveis = cursor.fetchone()["total"]
+
+
+        cursor.execute("SELECT COUNT(*) AS total FROM emprestimo WHERE status = 'Emprestado'")
+        total_emprestimos = cursor.fetchone()["total"]
+
+
+        cursor.close()
+        conexao.close()
+
+
+        return render_template(
+            "index.html",
+            total_alunos=total_alunos,
+            total_livros=total_livros,
+            total_disponiveis=total_disponiveis,
+            total_emprestimos=total_emprestimos
+        )
+
+
+    except Exception as erro:
+        flash(f"Erro ao carregar página inicial: {erro}", "erro")
+        return render_template(
+            "index.html",
+            total_alunos=0,
+            total_livros=0,
+            total_disponiveis=0,
+            total_emprestimos=0
+        )
+
+
+
+
+@app.route("/alunos")
+def listar_alunos():
+    try:
+        pesquisa = request.args.get("pesquisa", "")
+
+
+        conexao = conectar()
+        cursor = conexao.cursor(dictionary=True)
+
+
+        if pesquisa:
+            sql = """
+                SELECT * FROM aluno
+                WHERE nome LIKE %s
+                   OR serie LIKE %s
+                   OR turma LIKE %s
+                ORDER BY nome
+            """
+
+
+            valor = f"%{pesquisa}%"
+            cursor.execute(sql, (valor, valor, valor))
+        else:
+            cursor.execute("SELECT * FROM aluno ORDER BY nome")
+
+
         alunos = cursor.fetchall()
 
 
         cursor.close()
         conexao.close()
+
+
+        return render_template(
+            "alunos.html",
+            alunos=alunos,
+            pesquisa=pesquisa
+        )
+
+
+    except Exception as erro:
+        flash(f"Erro ao listar alunos: {erro}", "erro")
+        return redirect("/")
 
 
         return render_template("alunos.html", alunos=alunos)
@@ -77,13 +152,30 @@ def cadastrar_aluno():
 @app.route("/livros")
 def listar_livros():
     try:
+        pesquisa = request.args.get("pesquisa", "")
 
 
         conexao = conectar()
         cursor = conexao.cursor(dictionary=True)
 
 
-        cursor.execute("SELECT * FROM livro")
+        if pesquisa:
+            sql = """
+                SELECT * FROM livro
+                WHERE titulo LIKE %s
+                   OR autor LIKE %s
+                   OR categoria LIKE %s
+                   OR status LIKE %s
+                ORDER BY titulo
+            """
+
+
+            valor = f"%{pesquisa}%"
+            cursor.execute(sql, (valor, valor, valor, valor))
+        else:
+            cursor.execute("SELECT * FROM livro ORDER BY titulo")
+
+
         livros = cursor.fetchall()
 
 
@@ -91,11 +183,17 @@ def listar_livros():
         conexao.close()
 
 
-        return render_template("livros.html", livros=livros)
+        return render_template(
+            "livros.html",
+            livros=livros,
+            pesquisa=pesquisa
+        )
 
 
     except Exception as erro:
-        return f"Erro ao listar livros: {erro}"
+        flash(f"Erro ao listar livros: {erro}", "erro")
+        return redirect("/")
+
 
 
 @app.route("/livros/novo")
@@ -295,9 +393,37 @@ def cadastrar_emprestimo():
         data_prevista_devolucao = request.form["data_prevista_devolucao"]
 
 
+        data_emp = datetime.strptime(data_emprestimo, "%Y-%m-%d")
+        data_dev = datetime.strptime(data_prevista_devolucao, "%Y-%m-%d")
+
+        if data_dev < data_emp:
+            flash("A data prevista de devolução não pode ser menor que a data do empréstimo.", "erro")
+            return redirect("/emprestimos/novo")
+
         conexao = conectar()
         cursor = conexao.cursor()
 
+        cursor.execute(
+            "SELECT status FROM livro WHERE id_livro = %s",
+            (id_livro,)
+        )
+
+
+        livro = cursor.fetchone()
+
+
+        if livro is None:
+            flash("Livro não encontrado.", "erro")
+            cursor.close()
+            conexao.close()
+            return redirect("/emprestimos/novo")
+
+
+        if livro[0] != "Disponível":
+            flash("Este livro não está disponível para empréstimo.", "erro")
+            cursor.close()
+            conexao.close()
+            return redirect("/emprestimos/novo")
 
         sql = """
             INSERT INTO emprestimo (
